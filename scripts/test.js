@@ -1,7 +1,7 @@
 // Offline test: mocks the World Bank API to verify the counter math and the
 // Yemot response format deterministically. Run: npm test
 import { getWorldStats } from '../api/_lib/worldstats.js';
-import { buildYemotReading } from '../api/_lib/yemot.js';
+import { buildYemotReading, buildYemotNavigation } from '../api/_lib/yemot.js';
 
 // --- mock global fetch with realistic World Bank payloads -----------------
 const MOCK = {
@@ -45,12 +45,22 @@ assert(by.deaths_this_year > 40e6 && by.deaths_this_year < 80e6, 'deaths/yr magn
 
 const body = buildYemotReading(data.counters);
 console.log('\nYemot body:\n' + body);
-assert(body.startsWith('id_list_message=t-אוכלוסיית העולם הנוכחית.n-'), 'yemot prefix');
-assert(body.endsWith('&go_to_folder=hangup'), 'yemot suffix');
-assert((body.match(/n-/g) || []).length === 7, 'seven numbers read');
-assert(by.population_now && data.counters[0].as_of === '2025', 'population as_of year');
+// Uses the read action (plays data + captures one key) — no negative overflow.
+assert(body.startsWith('read=t-אוכלוסיית העולם הנוכחית.'), 'yemot read prefix');
+assert(body.endsWith('=wm_nav,no,1,1,5,Digits,no,no,,,1,Ok'), 'read input spec');
+// Large population is read in scale groups, so no n- exceeds 32-bit.
+for (const m of body.matchAll(/n-(\d+)/g)) {
+  assert(Number(m[1]) < 2147483647, 'each spoken number fits 32-bit: ' + m[1]);
+}
+assert(body.includes('n-8.t-מיליארד.'), 'population read as billions');
+assert(data.counters[0].as_of === '2025', 'population as_of year');
 assert(data.counters[1].as_of === '2024', 'births as_of year');
-assert(body.includes('.t-מבוסס על נתוני שנת 2025.'), 'population as-of spoken');
 assert((body.match(/מבוסס על נתוני שנת/g) || []).length === 7, 'as-of read for each');
+
+// Navigation: pressing 0 returns to the parent extension, silently.
+assert(buildYemotNavigation('0', '3') === 'go_to_folder=/', 'nav 0 from ext 3 -> main');
+assert(buildYemotNavigation('0', '1/3') === 'go_to_folder=/1', 'nav 0 from 1/3 -> /1');
+assert(buildYemotNavigation('', '3') === 'go_to_folder=hangup', 'no key -> hangup');
+assert(buildYemotNavigation('5', '3') === 'go_to_folder=hangup', 'other key -> hangup');
 
 console.log('\nAll assertions passed ✅');
