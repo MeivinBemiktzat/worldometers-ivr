@@ -1,0 +1,30 @@
+name: verify (live data)
+
+# Runs the real module against the live World Bank API on GitHub's runners
+# (open internet) to confirm the endpoints return correct, live values.
+on:
+  push:
+    branches: [claude/worldometers-ivr-api-g0xskq]
+    paths: ['api/**', 'scripts/**', '.github/workflows/verify.yml']
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Offline logic test
+        run: npm test
+      - name: Live end-to-end against World Bank
+        run: |
+          node --input-type=module -e '
+            import { getWorldStats } from "./api/_lib/worldstats.js";
+            import { buildYemotReading } from "./api/_lib/yemot.js";
+            const d = await getWorldStats();
+            console.log("data_years:", JSON.stringify(d.data_years));
+            for (const c of d.counters) console.log(c.label, "=", c.value_text);
+            console.log("\nYemot body:\n" + buildYemotReading(d.counters));
+          '

@@ -26,6 +26,8 @@ export function buildYemotReading(counters, { limit } = {}) {
     const label = sanitizeLabel(c.label);
     if (label) parts.push(`t-${label}`);
     parts.push(`n-${Math.round(c.value)}`);
+    const asOf = sanitizeLabel(c.as_of_text);
+    if (asOf) parts.push(`t-${asOf}`);
   }
 
   return `id_list_message=${parts.join('.')}&go_to_folder=hangup`;

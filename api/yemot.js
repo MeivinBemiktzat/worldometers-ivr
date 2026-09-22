@@ -1,15 +1,15 @@
 // GET /api/yemot
 // Endpoint designed to be used directly as the `api_link` of a Yemot
-// "type=api" extension. It returns a plain-text response that Yemot reads
-// aloud to the caller (labels via TTS, numbers spoken in Hebrew).
+// "type=api" extension. Returns a plain-text response that Yemot reads aloud
+// to the caller (Hebrew labels via TTS, numbers spoken in Hebrew).
 //
 // Optional query params:
 //   ?limit=N   read only the first N counters (keeps the call short)
 //
-// Note: this endpoint always answers with HTTP 200 and a spoken body, even on
-// failure, so the caller hears a clear Hebrew error message instead of silence.
+// Always answers HTTP 200 with a spoken body, even on failure, so the caller
+// hears a clear Hebrew error message instead of silence.
 
-import { getCounters, WorldometersError } from './_lib/worldometers.js';
+import { getWorldStats, WorldstatsError } from './_lib/worldstats.js';
 import { buildYemotReading, yemotError } from './_lib/yemot.js';
 
 export default async function handler(req, res) {
@@ -19,14 +19,13 @@ export default async function handler(req, res) {
   const limit = parseLimit(req.query && req.query.limit);
 
   try {
-    const { counters } = await getCounters();
+    const { counters } = await getWorldStats();
     res.status(200).send(buildYemotReading(counters, { limit }));
   } catch (err) {
     const message =
-      err instanceof WorldometersError
+      err instanceof WorldstatsError
         ? err.message
-        : 'אירעה שגיאה בעת קריאת הנתונים מ-Worldometers.';
-    // 200 so Yemot plays the spoken error to the caller.
+        : 'אירעה שגיאה בעת חישוב הנתונים.';
     res.status(200).send(yemotError(message));
   }
 }
