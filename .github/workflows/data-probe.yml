@@ -1,0 +1,33 @@
+name: data probe (diagnostic)
+
+on:
+  push:
+    branches: [claude/worldometers-ivr-api-g0xskq]
+    paths: ['.github/workflows/data-probe.yml']
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe candidate open data sources
+        run: |
+          UA="Mozilla/5.0 (X11; Linux x86_64) Chrome/120 Safari/537.36"
+          probe () {
+            echo ""
+            echo "########## $1"
+            curl -sS -m 25 -A "$UA" "$1" -D - -o /tmp/body.txt | head -8
+            echo "----- BODY (first 1200 chars) -----"
+            head -c 1200 /tmp/body.txt
+            echo ""
+            echo "----- LENGTH: $(wc -c </tmp/body.txt) -----"
+          }
+          # World Bank: world population, crude birth rate, crude death rate, CO2
+          probe "https://api.worldbank.org/v2/country/WLD/indicator/SP.POP.TOTL?format=json&mrnev=1"
+          probe "https://api.worldbank.org/v2/country/WLD/indicator/SP.DYN.CBRT.IN?format=json&mrnev=1"
+          probe "https://api.worldbank.org/v2/country/WLD/indicator/SP.DYN.CDRT.IN?format=json&mrnev=1"
+          probe "https://api.worldbank.org/v2/country/WLD/indicator/EN.ATM.CO2E.KT?format=json&mrnev=1"
+          # US Census world population clock (live)
+          probe "https://www.census.gov/popclock/data/population.php/world"
+          # population.io (World Bank backed) - world today
+          probe "https://d6wn6bmjj722w.population.io/1.0/population/World/today-and-tomorrow/"
