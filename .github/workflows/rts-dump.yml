@@ -1,0 +1,26 @@
+name: RTS dump (diagnostic)
+
+# Runs on GitHub's runners (open internet, no content filter) to fetch the RTS
+# init.php that feeds the Worldometers counters, so we can see its exact
+# structure. Triggered automatically on push to the dev branch, and manually.
+on:
+  push:
+    branches: [claude/worldometers-ivr-api-g0xskq]
+    paths: ['.github/workflows/rts-dump.yml']
+  workflow_dispatch:
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch RTS init.php
+        run: |
+          NOW=$(date +%s000)
+          URL="https://www.realtimestatistics.net/rts/init.php?callback=jsoncallback&host=worldometers&time=${NOW}&_=${NOW}"
+          echo "URL: $URL"
+          echo "===== BEGIN INIT.PHP ====="
+          curl -sS -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120 Safari/537.36" \
+               -H "Referer: https://www.worldometers.info/" \
+               "$URL" | head -c 20000
+          echo ""
+          echo "===== END INIT.PHP ====="
