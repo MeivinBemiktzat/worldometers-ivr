@@ -1,0 +1,14 @@
+{
+  "name": "worldometers-ivr",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Serverless API that reads live Worldometers (iw) counters for a Yemot IVR extension",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test:parse": "node scripts/test-parse.js",
+    "test:local": "node scripts/test-local.js"
+  }
+}
